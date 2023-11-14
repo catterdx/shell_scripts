@@ -7,12 +7,25 @@
 # | Descr:  Installing powerful command-line tools from Github release.
 # # **************************************************************#
 #
-# You can customize the repository path by referring to lines 161 to 168.
-# This script requires the 'curl' command to be installed.
+# You can customize the repository path by referring to lines 183 to 190.
+# This script requires the 'curl, tar' command to be installed.
 
 # ENV
 # Provide your GitHub token.
 GH_TOKEN=Your_Token
+if [ "$GH_TOKEN" = Your_Token ]; then
+    echo error: ENV \'GH_TOKEN\' is empty. Provide your GitHub token and try again.
+    exit 1
+fi
+
+command -v curl &> /dev/null || {
+    echo >&2 "curl is not installed.  Aborting."
+    exit 1
+}
+command -v tar &> /dev/null || {
+    echo >&2 "tar is not installed.  Aborting."
+    exit 1
+}
 
 # Colorful messages
 Font_Red="\033[31m"
@@ -57,7 +70,7 @@ TrapSig2() {
     exit 1
 }
 
-# handle signal 2
+# handle signal 3
 TrapSig3() {
     echo -e "\n\n${Msg_Info}Caught Signal SIGQUIT, Exiting ...\n"
     CleanUp 1
@@ -65,7 +78,7 @@ TrapSig3() {
     exit 1
 }
 
-# handle signal 2 (kill)
+# handle signal 15 (kill)
 TrapSig15() {
     echo -e "\n\n${Msg_Info}Caught Signal SIGTERM, Exiting ...\n"
     CleanUp 1
@@ -141,12 +154,23 @@ IsCmdExits() {
 }
 
 InvokeGitAPI() {
+    response_code=$(curl -X GET \
+        --url "https://api.github.com/octocat" \
+        -H "Authorization: Bearer $GH_TOKEN" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        -m 3 -s -w "%{http_code}" -o /dev/null)
+    if [ "$response_code" -ne 200 ]; then
+        echo "Authenticating to the REST API went wrong."
+        exit 1
+    fi
+
     # shellcheck disable=SC2016
     api_command='curl -sL \
     -H "Accept: application/vnd.github+json" \
     -H "Authorization: Bearer $GH_TOKEN" \
     -H "X-GitHub-Api-Version: 2022-11-28" \
     https://api.github.com/repos/'
+
     release_info=$(eval "$api_command$1"/releases/latest | grep -E "tag_name|browser_download_url" |
         tr -d '",' | awk '{ print $NF }')
     # return "latest version" and "download url"
