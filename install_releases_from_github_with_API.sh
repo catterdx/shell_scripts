@@ -133,7 +133,7 @@ MkTempDir() {
 }
 
 CleanUp() {
-  if [ "$1" -eq 1 ] && [ -d "$TMP_DIR" ] && cd "$HOME"; then
+  if [ "$1" ] && [ "$1" -eq 1 ] && [ -d "$TMP_DIR" ] && cd "$HOME"; then
     rm -rf "$TMP_DIR" && echo -e "${Msg_Info}temp file has benn cleaned." || exit 1
   elif [ -d "$TMP_DIR" ]; then
     rm -rf "$TMP_DIR" && echo -e "${Msg_Success}Finished!" || echo -e "${Msg_Failed}Can not delete $TMP_DIR, Check it manaually."
