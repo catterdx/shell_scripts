@@ -218,20 +218,18 @@ InstallRelease() {
   mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return 1
   mkdir -p ~/.local/share/man/man{1..10} || return 1
   find . -name "*ps1" -print0 | xargs -0 rm -f
-  if file_bin_path=$(find . -iname "$app_name" -type f | grep .) && [ "$file_bin_path" ]; then
-    chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$file_bin_path" && chmod 0755 "$file_bin_path" && mv -f "$file_bin_path" ~/.local/bin/
-  else
-    file_bin_path=$(find . -iname "$app_name" -type f | grep .)
-    [ "$file_bin_path" ] && chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$file_bin_path" && chmod 0755 "$file_bin_path" && mv -f "$file_bin_path" ~/.local/bin/
+  file_bin_path=$(find . -iname "$app_name" -type f | grep .)
+  if [ "$file_bin_path" ]; then
+    chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$file_bin_path" \
+      && chmod 0755 "$file_bin_path" \
+      && mv -f "$file_bin_path" ~/.local/bin/
   fi
   if file_man_path=$(find . -iname "${app_name}*.1" -type f | grep .) && [ -d ~/.local/share/man/man1 ] && [ "$file_man_path" ]; then
     echo "$file_man_path" | xargs chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" && echo "$file_man_path" | xargs -I % mv -f % ~/.local/share/man/man1/
     status=$?
     if [ $status -eq 0 ]; then
       if ! [ -f ~/.manpath ]; then
-        tee ~/.manpath << EOF > /dev/null
-MANDATORY_MANPATH ~/.local/share/man
-EOF
+        echo 'MANDATORY_MANPATH ~/.local/share/man' > ~/.manpath
       fi
     fi
   fi
@@ -260,7 +258,6 @@ EOF
     fi
   done
 }
-
 
 # Main start
 ChkOSType
