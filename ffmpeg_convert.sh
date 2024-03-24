@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2086
-# Convert the given file to given foramt using ffmpeg.
+# Convert the given file to given format using ffmpeg.
 
 declare -a input_file_s
-declare input_dir input_file output_folder encoder_type crf codec suffix_name
+declare input_dir input_file output_folder encoder_type crf codec suffix_name ext_name
 declare GLOBAL_OUTPUT_FOLDER
 function get_opts() {
 	while getopts :d:f:o:s:t: opt; do
@@ -33,7 +33,7 @@ function get_opts() {
 			usage
 			exit 1
 		fi
-		if [ $input_file ]; then
+		if [ "$input_file" ]; then
 			echo "The '-d' option can not used with '-f' together."
 			usage
 			exit 1
@@ -75,16 +75,19 @@ function get_opts() {
 	case $encoder_type in
 		264)
 			output_file="${input_file%.*}_h264.mp4"
+			ext_name=_h264.mp4
 			codec=libx264
 			crf=24
 			;;
 		265)
 			output_file="${input_file%.*}_h265.mp4"
+			ext_name=_h265.mp4
 			codec=libx265
 			crf=28
 			;;
 		av1)
 			output_file="${input_file%.*}_av1.mp4"
+			ext_name=_av1.mp4
 			codec=libsvtav1
 			crf=30
 			;;
@@ -109,7 +112,7 @@ function get_opts() {
 
 function get_output_folder() {
 	target_dest="$1"
-	output_folder=$(dirname ${target_dest})
+	output_folder=$(dirname "${target_dest}")
 }
 
 function check_folder_can_write() {
@@ -121,7 +124,7 @@ function check_folder_can_write() {
 
 function ffconvert() {
 	if [ -f "$input_file" ]; then
-		[ -z $GLOBAL_OUTPUT_FOLDER ] || get_output_folder "$input_file"
+		[ -z "$GLOBAL_OUTPUT_FOLDER" ] || get_output_folder "$input_file"
 		check_folder_can_write "$output_folder"
 		ffmpeg -hide_banner \
 			-i "$input_file" \
@@ -136,7 +139,7 @@ function ffconvert() {
 				get_output_folder "$target_file"
 				check_folder_can_write "$output_folder"
 			fi
-			new_name=$(basename ${target_file})
+			new_name=$(basename "${target_file}")
 			new_name=${new_name%.*}
 			ffmpeg -hide_banner \
 				-i "$target_file" \
@@ -145,7 +148,7 @@ function ffconvert() {
 				-movflags faststart \
 				-c:a aac \
 				-b:a 128K \
-				"${GLOBAL_OUTPUT_FOLDER:-${output_folder}}/${new_name}$suffix_name"
+				"${GLOBAL_OUTPUT_FOLDER:-${output_folder}}/${new_name}$suffix_name$ext_name"
 		done
 	fi
 
