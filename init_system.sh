@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2034
 #
 # #***************************************************************#
 # | Author: catterdx
@@ -343,7 +342,7 @@ RPMInPkgs() {
 			else
 				echo -e "$Msg_Failed"
 				echo -e "${Msg_Info}epel or epel-next package can not be installed."
-				exit 65
+				exit 1
 			fi
 		done
 	fi
@@ -706,8 +705,8 @@ UpdateApps() {
 }
 
 CfgGitApps() {
-	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return
-	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/man/man{1..8} || return
+	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return 1
+	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/man/man{1..8} || return 1
 	find . -name "*ps1" -print0 | xargs -0 rm -f
 	if file_bin_path=$(find . -iname "$app_name" -type f | grep .) && [ "$file_bin_path" ]; then
 		chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$file_bin_path" && chmod 0755 "$file_bin_path" && mv -f "$file_bin_path" ~/.local/bin/
@@ -888,7 +887,7 @@ main() {
 		Usage
 		exit 1
 	fi
-	Tasks "$start_args"
+	Tasks "$start_arg"
 }
 if [ -t 1 ]; then
 	IsTTY() {
