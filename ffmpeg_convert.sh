@@ -5,7 +5,7 @@
 declare -a input_file_s
 declare input_dir input_file output_folder encoder_type crf codec suffix_name ext_name
 declare GLOBAL_OUTPUT_FOLDER
-function get_opts() {
+function get_opts {
 	while getopts :d:f:o:s:t: opt; do
 		case "$opt" in
 			d) input_dir="$OPTARG" ;;
@@ -110,19 +110,19 @@ function get_opts() {
 	fi
 }
 
-function get_output_folder() {
+function get_output_folder {
 	target_dest="$1"
 	output_folder=$(dirname "${target_dest}")
 }
 
-function check_folder_can_write() {
+function check_folder_can_write {
 	if [ ! -d "$output_folder" ] || [ ! -w "$output_folder" ]; then
 		echo "The output folder which your specified: <$output_folder> is not allowed."
 		exit 1
 	fi
 }
 
-function ffconvert() {
+function ffconvert {
 	if [ -f "$input_file" ]; then
 		[ -z "$GLOBAL_OUTPUT_FOLDER" ] || get_output_folder "$input_file"
 		check_folder_can_write "$output_folder"
@@ -144,7 +144,8 @@ function ffconvert() {
 			ffmpeg -hide_banner \
 				-i "$target_file" \
 				-c:v ${codec:-libx264} \
-				-crf ${crf:-24} ${scale_opt:- } \
+				-crf ${crf:-24} \
+				${scale_opt:- } \
 				-movflags faststart \
 				-c:a aac \
 				-b:a 128K \
@@ -154,7 +155,7 @@ function ffconvert() {
 
 }
 
-function usage() {
+function usage {
 	echo "Usage: $0 [-f <input_file>] [-d <source_folder>] [-t <encoder_type>] [-s <scale>] [-o <output_folder>] FILE1 FILE2 ..."
 	echo "Default: $0 file is equivalent to : $0 -f input_file.avi -t 264 -s 1024 -o /path/output_dir"
 	echo "Example: $0 -d /source_dir -o /path/output_dir"
@@ -167,14 +168,13 @@ if [ $# -lt 1 ]; then
 	exit 1
 fi
 
-command -v ffmpeg &> /dev/null || {
-	echo "Command ffmpeg not found."
-	exit 1
-}
-command -v find &> /dev/null || {
-	echo "Command find not found."
-	exit 1
-}
+commands="ffmpeg find"
+for cmd in $commands; do
+	command -v $cmd &> /dev/null || {
+		echo "Command $cmd not found, aborting."
+		exit 1
+	}
+done
 
 get_opts "$@"
 ffconvert
