@@ -18,7 +18,7 @@ function get_opts {
 			s) scale="$OPTARG" ;;
 			t) encoder_type="$OPTARG" ;;
 			*)
-				echo "Unknown option: $opt"
+				echo "Unknown option: $opt" >&2
 				usage
 				exit 1
 				;;
@@ -29,12 +29,12 @@ function get_opts {
 
 	if [ "$input_dir" ] && [ -d "$input_dir" ]; then
 		if [ -z "$output_folder" ]; then
-			echo "The '-d' and '-o' options must be used together."
+			echo "The '-d' and '-o' options must be used together." >&2
 			usage
 			exit 1
 		fi
 		if [ "$input_file" ]; then
-			echo "The '-d' option can not used with '-f' together."
+			echo "The '-d' option can not used with '-f' together." >&2
 			usage
 			exit 1
 		fi
@@ -55,18 +55,17 @@ function get_opts {
 
 	for param in "$@"; do
 		if [[ "$param" =~ ^- ]] || [[ "$input_file" ]]; then
-			echo "Wrong: extra parameter -> $*"
+			echo "Wrong: extra parameter -> $*" >&2
 			usage
 			exit 1
 		elif [ -f "$param" ]; then
 			input_file_s+=("$param")
 		elif [ -d "$param" ]; then
-			echo "Use the '-d' options to spefify folders."
+			echo "Use the '-d' options to spefify folders." >&2
 			usage
 			exit 1
 		else
-			echo "Error: $param"
-			echo -e "This parameter is not a standard file.\n"
+			echo -e "Error: $param\nThis parameter is not a standard file.\n" >&2
 			usage
 			exit 1
 		fi
@@ -117,7 +116,7 @@ function get_output_folder {
 
 function check_folder_can_write {
 	if [ ! -d "$output_folder" ] || [ ! -w "$output_folder" ]; then
-		echo "The output folder which your specified: <$output_folder> is not allowed."
+		echo "The output folder which your specified: <$output_folder> is not allowed." >&2
 		exit 1
 	fi
 }
@@ -170,8 +169,8 @@ fi
 
 commands="ffmpeg find"
 for cmd in $commands; do
-	command -v $cmd &> /dev/null || {
-		echo "Command $cmd not found, aborting."
+	command -v "$cmd" &> /dev/null || {
+		echo "FAIL: Missing command '$cmd', aborting." >&2
 		exit 1
 	}
 done
