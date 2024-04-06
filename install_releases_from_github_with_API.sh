@@ -267,10 +267,10 @@ function InstallRelease {
 # Main start
 ChkOSType
 
-commands="curl tar find"
+commands="tar curl find"
 for cmd in $commands; do
-	command -v $cmd &> /dev/null || {
-		echo -e "Command is missing in PATH: ${Font_Red}$cmd${Font_Suffix}, aborting." >&2
+	command -v "$cmd" &> /dev/null || {
+		echo -e "${Msg_Failed}Missing command: ${Font_Red}$cmd${Font_Suffix}, aborting." >&2
 		exit 1
 	}
 done
