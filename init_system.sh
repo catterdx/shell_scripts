@@ -149,14 +149,6 @@ CleanUp() {
 	fi
 }
 
-ChkPriv() {
-	if [ $EUID -ne 0 ]; then
-		Usage
-		echo -e "\n${Msg_Error}This script must be run as ${Font_Yellow}root${Font_Suffix}!\n"
-		exit 1
-	fi
-}
-
 SetRealHome() {
 	if [ "$USER" = "root" ] && [ "$SUDO_USER" = "root" ]; then
 		export real_home='/root'
@@ -707,21 +699,23 @@ UpdateApps() {
 CfgGitApps() {
 	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return 1
 	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/man/man{1..8} || return 1
+	if ! [ -f ~/.manpath ]; then
+		sudo -u "${SUDO_USER:-$USER}" tee ~/.manpath <<- EOF > /dev/null
+			MANDATORY_MANPATH ~/.local/share/man
+		EOF
+	fi
+
 	find . -name "*ps1" -print0 | xargs -0 rm -f
+
 	if file_bin_path=$(find . -iname "$app_name" -type f | grep .) && [ "$file_bin_path" ]; then
 		chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$file_bin_path" && chmod 0755 "$file_bin_path" && mv -f "$file_bin_path" ~/.local/bin/
 	fi
-	if file_man_path=$(find . -iname "$app_name*.1" -type f | grep .) && [ -d ~/.local/share/man/man1 ] && [ "$file_man_path" ]; then
-		echo "$file_man_path" | xargs chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" && echo "$file_man_path" | xargs -I % mv -f % ~/.local/share/man/man1/
-		status=$?
-		if [ "$status" -eq 0 ]; then
-			if ! [ -f ~/.manpath ]; then
-				sudo -u "${SUDO_USER:-$USER}" tee ~/.manpath <<- EOF > /dev/null
-					MANDATORY_MANPATH ~/.local/share/man
-				EOF
-			fi
-		fi
+
+	if file_man_path=$(find . -iname "$app_name*.1" -type f | grep .) && [ "$file_man_path" ]; then
+		echo "$file_man_path" | xargs chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}"
+		echo "$file_man_path" | xargs -I % mv -f % ~/.local/share/man/man1/
 	fi
+
 	auto_complete_path=(~/.local/share/bash-completion/completions ~/.local/share/zsh-completion/completions)
 	for auto_path in "${auto_complete_path[@]}"; do
 		if [ -d "$auto_path" ] && fix_name=$(grep -Eo "zsh" <<< "$auto_path"); then
@@ -745,7 +739,6 @@ CfgGitApps() {
 			fi
 		fi
 	done
-	return
 }
 
 AddCstmFunc() {
@@ -830,7 +823,7 @@ PrintSuccess() {
 }
 
 Tasks() {
-	if [ "$1" = "-u" ]; then
+	if [ "$1" = "update" ]; then
 		ChkOSType
 		ChkDist
 		SetRealHome
@@ -877,18 +870,9 @@ Usage() {
 }
 
 main() {
-	ChkPriv
-	if [ "$1" = "-a" ] || [ "$#" -eq 0 ]; then
-		start_arg="-a"
-	elif [ "$1" = "-u" ]; then
-		start_arg="-u"
-	else
-		echo -e "${Msg_Error}Wrong parameter."
-		Usage
-		exit 1
-	fi
-	Tasks "$start_arg"
+	Tasks "$action"
 }
+
 if [ -t 1 ]; then
 	IsTTY() {
 		true
@@ -898,4 +882,22 @@ else
 		false
 	}
 fi
-main "$@"
+
+if [ $EUID -ne 0 ]; then
+	Usage
+	echo -e "\n${Msg_Error}This script must be run as ${Font_Yellow}root${Font_Suffix}!\n"
+	exit 1
+fi
+
+while getopts ':au' opt; do
+	case $opt in
+		a) action='all' ;;
+		u) action='update' ;;
+		*)
+			echo -e "${Font_Yellow}Wrone arguments.${Font_Suffix}"
+			Usage
+			exit 1
+			;;
+	esac
+done
+main "action"
