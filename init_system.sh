@@ -883,7 +883,7 @@ else
 	}
 fi
 
-if [ $EUID -ne 0 ]; then
+if [[ $EUID -ne 0 ]]; then
 	Usage
 	echo -e "\n${Msg_Error}This script must be run as ${Font_Yellow}root${Font_Suffix}!\n"
 	exit 1
@@ -894,10 +894,10 @@ while getopts ':au' opt; do
 		a) action='all' ;;
 		u) action='update' ;;
 		*)
-			echo -e "${Font_Yellow}Wrone arguments.${Font_Suffix}"
+			echo -e "${Font_Yellow}Wrong arguments.${Font_Suffix}"
 			Usage
 			exit 1
 			;;
 	esac
 done
-main "action"
+main "$action"

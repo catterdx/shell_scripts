@@ -5,7 +5,7 @@
 declare -a input_file_s
 declare input_dir input_file output_folder encoder_type crf codec suffix_name ext_name
 declare GLOBAL_OUTPUT_FOLDER
-function get_opts {
+get_opts() {
 	while getopts :d:f:o:s:t: opt; do
 		case "$opt" in
 			d) input_dir="$OPTARG" ;;
@@ -39,12 +39,12 @@ function get_opts {
 			exit 1
 		fi
 		input_dir=${input_dir%/}
-		mapfile -t input_file_s < <(find "$input_dir" -maxdepth 1 -type f)
+		mapfile -d '' -t input_file_s < <(find "$input_dir" -maxdepth 1 -type f -print0)
 
 		printf "=%.0s" {1..30}
 		echo
 		for i in "${input_file_s[@]}"; do
-			lsd -1 "$i"
+			ls -1 "$i"
 		done
 		printf "=%.0s" {1..30}
 		echo
@@ -109,19 +109,19 @@ function get_opts {
 	fi
 }
 
-function get_output_folder {
+get_output_folder() {
 	target_dest="$1"
 	output_folder=$(dirname "${target_dest}")
 }
 
-function check_folder_can_write {
+check_folder_can_write() {
 	if [ ! -d "$output_folder" ] || [ ! -w "$output_folder" ]; then
 		echo "The output folder which your specified: <$output_folder> is not allowed." >&2
 		exit 1
 	fi
 }
 
-function ffconvert {
+ffconvert() {
 	if [ -f "$input_file" ]; then
 		[ -z "$GLOBAL_OUTPUT_FOLDER" ] || get_output_folder "$input_file"
 		check_folder_can_write "$output_folder"
@@ -154,7 +154,7 @@ function ffconvert {
 
 }
 
-function usage {
+usage() {
 	echo "Usage: $0 [-f <input_file>] [-d <source_folder>] [-t <encoder_type>] [-s <scale>] [-o <output_folder>] FILE1 FILE2 ..."
 	echo "Default: $0 file is equivalent to : $0 -f input_file.avi -t 264 -s 1024 -o /path/output_dir"
 	echo "Example: $0 -d /source_dir -o /path/output_dir"
