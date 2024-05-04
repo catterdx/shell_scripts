@@ -212,7 +212,7 @@ ChgTimeZone() {
 
 MkTempDir() {
 	{ mkdir -p "$TMP_DIR" && cd "$TMP_DIR"; } || {
-		echo "${Msg_Failed}Can not Make tmp dir."
+		echo -e "${Msg_Failed}Can not Make tmp dir."
 		exit 1
 	}
 }
@@ -220,15 +220,20 @@ MkTempDir() {
 ChkDist() {
 	local cmd
 	cmd="cat /etc/os-release"
-	if $cmd | grep -Eqi "debian"; then
-		os_release="debian"
-	elif $cmd | grep -Eqi "ubuntu"; then
-		os_release="ubuntu"
-	elif $cmd | grep -Eqi "centos|rocky|almalinux|fedora"; then
-		os_release="centos"
+
+	if [ -f /etc/os-releae ]; then
+		if $cmd | grep -Eqi "debian"; then
+			os_release="debian"
+		elif $cmd | grep -Eqi "ubuntu"; then
+			os_release="ubuntu"
+		elif $cmd | grep -Eqi "centos|rocky|almalinux|fedora"; then
+			os_release="centos"
+		else
+			. /etc/os-release
+			os_release="$NAME"
+		fi
 	else
-		. /etc/os-release
-		os_release="$NAME"
+		os_release=unknown
 	fi
 }
 
@@ -301,14 +306,10 @@ ChkPM() {
 	if [ "$os_release" = "centos" ]; then
 		if CmdExists dnf; then
 			pkg_manager=dnf
-		else
-			status=1
 		fi
 	elif [ "$os_release" = ubuntu ] || [ "$os_release" = debian ]; then
 		if CmdExists apt; then
 			pkg_manager=apt
-		else
-			status=1
 		fi
 	else
 		status=1
@@ -397,7 +398,7 @@ RPMInPkgs() {
 		fi
 	done
 	echo -e "${Msg_Success}Dnf task done."
-	dnf alias add b='--disablerepo="*" --enablerepo=extras --enablerepo=baseos --enablerepo=appstream' &> /dev/null
+	# dnf alias add b='--disablerepo="*" --enablerepo=extras --enablerepo=baseos --enablerepo=appstream' &> /dev/null
 }
 
 DEBInPkgs() {
@@ -534,7 +535,7 @@ ModifyZshRC() {
 
 				# term color conf start
 				case "$TERM" in
-				xterm||*kitty)
+				xterm*)
 				export TERM=xterm-256color
 				;;
 				screen)
@@ -681,8 +682,8 @@ UpdateApps() {
 				local download_status
 				curl -SfLO --progress-bar "$download_url" && tar -axf "$app_tar_name" && rm "$app_tar_name"
 				download_status=$?
-				if [[ $download_status -eq 0 ]] && CfgGitApps; then
-					echo -e "$Msg_Success\"$app_name\"($latest_ver) installed successfully."
+				if [[ $download_status -eq 0 ]]; then
+					CfgGitApps && echo -e "$Msg_Success\"$app_name\"($latest_ver) installed successfully."
 				else
 					echo -e "$Msg_Failed: unable to download $app_name."
 				fi
@@ -697,8 +698,12 @@ UpdateApps() {
 }
 
 CfgGitApps() {
-	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return 1
-	sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/man/man{1..8} || return 1
+	if ! [ -d "$real_home/.local/share/zsh-completion" ]; then
+		sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/{bash,zsh}-completion/completions || return 1
+	fi
+	if ! [ -d "$real_home/.local/share/man/man1" ]; then
+		sudo -u "${SUDO_USER:-$USER}" mkdir -p ~/.local/share/man/man{1..8} || return 1
+	fi
 	if ! [ -f ~/.manpath ]; then
 		sudo -u "${SUDO_USER:-$USER}" tee ~/.manpath <<- EOF > /dev/null
 			MANDATORY_MANPATH ~/.local/share/man
